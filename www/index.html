@@ -40,7 +40,7 @@ h3{font-size:1.02rem;margin-bottom:10px;color:var(--primary)}
 h3.day-title{border-bottom:2px solid var(--bd);padding-bottom:8px}
 p.s,.s{color:var(--mut);font-size:14px;line-height:1.7}
 label{display:block;font-size:14px;font-weight:700;color:var(--tx);margin:14px 0 6px}
-input[type=text],input[type=number],input[type=date]{width:100%;padding:10px;border-radius:6px;border:1.5px solid var(--btn-bd);background:var(--card);color:var(--tx);font-size:16px;outline:0;font-family:inherit}
+input[type=text],input[type=number],input[type=date],input[type=time]{width:100%;padding:10px;border-radius:6px;border:1.5px solid var(--btn-bd);background:var(--card);color:var(--tx);font-size:16px;outline:0;font-family:inherit}
 input:focus{border-color:var(--or)}
 .seg{display:flex;gap:8px}.seg button,.chip{flex:1;padding:10px 6px;font-size:14px;text-align:center}
 .seg button.on,.chip.on{background:var(--primary);color:var(--on);border-color:var(--primary);font-weight:700}
@@ -96,15 +96,12 @@ body.dark-theme .rb .q3{background:rgba(110,170,255,.18);color:#A9CCFF}body.dark
 .err{color:var(--bad);font-size:14px;margin-top:10px}
 .pop,.fade{animation:pop .4s}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#12305E,#FF8A1F);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:98;box-shadow:0 10px 30px #0008;max-width:90%;text-align:center}
-textarea{width:100%;min-height:110px;padding:10px;border-radius:6px;border:1.5px solid var(--btn-bd);background:var(--card);color:var(--tx);font-family:monospace;font-size:12px;direction:ltr;margin:10px 0}
-#pa{display:none}
-@media print{body{background:#fff!important;animation:none;padding:0;color:#000}.wrap,#toast{display:none!important}#pa{display:block;direction:rtl;color:#000}#pa section{page-break-after:always}#pa section:last-child{page-break-after:auto}#pa table{width:100%;border-collapse:collapse;font-size:12px}#pa th,#pa td{border:1px solid #999;padding:6px 8px;text-align:right;vertical-align:top;color:#000}#pa th{background:#12305E;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}#pa thead{display:table-header-group}#pa tr{page-break-inside:avoid}#pa h2{color:#12305E;font-size:20px;margin-bottom:4px}#pa p{margin-bottom:10px;font-size:12px;color:#333}.pf{font-size:11px;color:#777;margin-bottom:8px;direction:ltr}}
+.chr{display:flex;align-items:center;gap:6px;margin-bottom:8px}.chr input{min-width:0}.mv{display:flex;flex-direction:column;gap:2px}.mv button{border:1px solid var(--btn-bd);background:var(--btn-bg);color:var(--btn-tx);border-radius:5px;font-size:10px;line-height:1;padding:3px 7px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<div id="pa"></div>
-<input type="file" id="imf" accept=".json,application/json" hidden onchange="importFile(this)">
+<input type="file" id="imf" accept=".json,application/json,text/plain" hidden onchange="importFile(this)">
 <script>
 const $=s=>document.querySelector(s),app=$('#app');
 const DN=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
@@ -180,7 +177,7 @@ function editSub(id){
 }
 function startWizard(){w=newW();step=0;err='';render()}
 
-function cfgOf(){const ch=w.unit==='chapters',chs=ch?w.chs.map(x=>({p:Math.max(0,Math.round(+x.p||0)),h:!!x.h})):null;return {unit:w.unit,chs,total:ch?chs.reduce((a,x)=>a+x.p,0):+w.total,days:+w.days,reps:+w.reps,restWd:w.restWd,restDates:w.restDates,start:w.start,hard:ch?[]:parseHard(w.hardTxt,+w.total)}}
+function cfgOf(){const ch=w.unit==='chapters',chs=ch?w.chs.map(x=>({p:Math.max(0,Math.round(+x.p||0)),h:!!x.h,n:(x.n||'').trim()})):null;return {unit:w.unit,chs,total:ch?chs.reduce((a,x)=>a+x.p,0):+w.total,days:+w.days,reps:+w.reps,restWd:w.restWd,restDates:w.restDates,start:w.start,hard:ch?[]:parseHard(w.hardTxt,+w.total)}}
 
 function next(){
   err='';
@@ -191,9 +188,9 @@ function next(){
   if(err){render();return}
   if(step<4){step++;render();return}
   if(w.editId){
-    const o=S.subs.find(x=>x.id===w.editId),c=cfgOf(),J=JSON.stringify,srt=a=>J([...a].sort());
-    const same=c.unit===o.unit&&c.total===o.total&&J(c.chs)===J(o.chs||null)&&J(c.hard)===J(o.hard||[])&&c.reps===o.reps&&srt(c.restWd)===srt(o.restWd)&&srt(c.restDates)===srt(o.restDates)&&c.days===w.rem;
-    if(same)o.name=w.name.trim();
+    const o=S.subs.find(x=>x.id===w.editId),c=cfgOf(),J=JSON.stringify,srt=a=>J([...a].sort()),pk=a=>J(a&&a.map(x=>[x.p,x.h]));
+    const same=c.unit===o.unit&&c.total===o.total&&pk(c.chs)===pk(o.chs||null)&&J(c.hard)===J(o.hard||[])&&c.reps===o.reps&&srt(c.restWd)===srt(o.restWd)&&srt(c.restDates)===srt(o.restDates)&&c.days===w.rem;
+    if(same){o.name=w.name.trim();if(o.chs)o.chs.forEach((x,i)=>x.n=c.chs[i].n)}
     else{const r=build(c);S.subs[S.subs.indexOf(o)]={...r.s,id:o.id,name:w.name.trim(),unit:w.unit,hist:{}}}
     S.tab='subs';w=null;SFX.add();save();render();return;
   }
@@ -203,19 +200,20 @@ function next(){
 }
 
 const uw=(s,n)=>s==='pages'?(n===1?'صفحة':'صفحات'):(n===1?'فصل':'فصول');
+const chN=(s,i)=>(s.chs[i]&&s.chs[i].n)||'الفصل '+(i+1);
 function segs(s,t){const o=[];let a=1;s.chs.forEach((x,i)=>{const b=a+x.p-1,lo=Math.max(a,t.from),hi=Math.min(b,t.to);if(lo<=hi)o.push({i,x,lo:lo-a+1,hi:hi-a+1,full:lo===a&&hi===b});a=b+1});return o}
 function rng(t,s){
-  if(s.chs)return segs(s,t).map(g=>g.full?'الفصل '+(g.i+1):`الفصل ${g.i+1} (ص ${g.lo===g.hi?g.lo:g.lo+'–'+g.hi} من ${g.x.p})`).join(' + ');
+  if(s.chs)return segs(s,t).map(g=>g.full?chN(s,g.i):`${chN(s,g.i)} (ص ${g.lo===g.hi?g.lo:g.lo+'–'+g.hi} من ${g.x.p})`).join(' + ');
   return t.from===t.to?`${s.unit==='pages'?'صفحة':'فصل'} ${t.from}`:`${s.unit==='pages'?'الصفحات':'الفصول'} ${t.from} → ${t.to}`}
-function hardIn(s,t){return s.chs?segs(s,t).filter(g=>g.x.h).map(g=>g.i+1):s.hard.filter(h=>h>=t.from&&h<=t.to)}
+function hardIn(s,t){return s.chs?segs(s,t).filter(g=>g.x.h).map(g=>chN(s,g.i)):s.hard.filter(h=>h>=t.from&&h<=t.to)}
 
 function wizard(){
   const dots=[0,1,2,3,4].map(i=>`<b class="${i<=step?'on':''}"></b>`).join('');
   let b='';
   if(step===0)b=`<div class="hero"><div class="big">📚</div><h2>${w.editId?'تعديل المادة ✏️':'ما أول مادة تريد إتقانها؟'}</h2><p class="s">${w.editId?'عدّل ما تشاء ثم تابع حتى الخطوة الأخيرة للحفظ.':'أضف مادتك وسنبني لك خطة دراسة ومراجعة متباعدة.'}</p></div>
-  <label>اسم المادة</label><input type="text" id="f" value="${esc(w.name)}" placeholder="مثال: علم الأحياء" oninput="w.name=this.value">`+((!S.subs.length&&!w.editId)?`<div class="chips" style="margin-top:16px;justify-content:center"><button class="chip" onclick="$('#imf').click()">⬆️ استيراد نسخة احتياطية</button><button class="chip ${imp?'on':''}" onclick="imp=!imp;render()">📋 من نص</button></div>${imp?impBox():''}`:'');
-  if(step===1){const ch=w.unit==='chapters';b=`<h2>حجم المادة</h2><p class="s">${ch?'حدّد عدد الفصول ثم عدد صفحات كل فصل: الفصل الكبير أو الصعب يُوزَّع على عدة أيام ويُراجَع أكثر من الفصل القصير.':'كم عدد صفحات المادة؟'}</p>
-  <label>نوع الوحدة</label><div class="seg"><button class="${!ch?'on':''}" onclick="w.unit='pages';render()">صفحات</button><button class="${ch?'on':''}" onclick="w.unit='chapters';render()">فصول</button></div>`+(ch?`<label>عدد الفصول</label><input type="number" min="1" max="60" value="${w.nch}" oninput="setN(this.value)"><label>صفحات كل فصل (اضغط ⭐ للفصل الصعب)</label><div id="chl">${chList()}</div>`:`<label>عدد الصفحات</label><input type="number" min="1" value="${w.total}" oninput="w.total=this.value"><label>الصفحات الصعبة (اختياري) — تُمنح وقتًا أطول</label><input type="text" value="${esc(w.hardTxt)}" placeholder="مثال: 5، 12-15، 40" oninput="w.hardTxt=this.value"><p class="s" style="margin-top:6px">افصل بفاصلة، ويمكنك كتابة نطاق مثل 12-15.</p>`)}
+  <label>اسم المادة</label><input type="text" id="f" value="${esc(w.name)}" placeholder="مثال: علم الأحياء" oninput="w.name=this.value">`+((!S.subs.length&&!w.editId)?`<div class="chips" style="margin-top:16px;justify-content:center"><button class="chip" onclick="$('#imf').click()">⬆️ استيراد نسخة احتياطية</button></div>`:'');
+  if(step===1){const ch=w.unit==='chapters';b=`<h2>حجم المادة</h2><p class="s">${ch?'حدّد عدد الفصول، ثم سمِّ كل فصل ورتّبهم بالأسهم ▲▼ بحسب ترتيب دراستك (الأول في القائمة يُدرَس أولًا). الفصل الكبير أو الصعب يُوزَّع على عدة أيام ويُراجَع أكثر.':'كم عدد صفحات المادة؟'}</p>
+  <label>نوع الوحدة</label><div class="seg"><button class="${!ch?'on':''}" onclick="w.unit='pages';render()">صفحات</button><button class="${ch?'on':''}" onclick="w.unit='chapters';render()">فصول</button></div>`+(ch?`<label>عدد الفصول</label><input type="number" min="1" max="60" value="${w.nch}" oninput="setN(this.value)"><label>الفصول بترتيب الدراسة (اضغط ⭐ للفصل الصعب)</label><div id="chl">${chList()}</div>`:`<label>عدد الصفحات</label><input type="number" min="1" value="${w.total}" oninput="w.total=this.value"><label>الصفحات الصعبة (اختياري) — تُمنح وقتًا أطول</label><input type="text" value="${esc(w.hardTxt)}" placeholder="مثال: 5، 12-15، 40" oninput="w.hardTxt=this.value"><p class="s" style="margin-top:6px">افصل بفاصلة، ويمكنك كتابة نطاق مثل 12-15.</p>`)}
   if(step===2)b=`<h2>الوقت والتكرار</h2><p class="s">الدراسة الأولى لا تُحسب تكرارًا. الفاصل التالي = الفاصل السابق × معامل تقييمك: نسيت تمامًا ×0.5، تذكرت بصعوبة ×1.2، تذكرت جيدًا ×1.8، أتقنت الدرس ×2.5. فيتغير العدد الفعلي للمراجعات حسب إجاباتك.</p>
   <label>${w.editId?'كم يومًا متبقيًا من اليوم لإنجاز المادة؟':'كم يومًا متاحًا لإنجاز المادة؟'}</label><input type="number" min="1" value="${w.days}" oninput="w.days=this.value">
   <label>كم مرة تريد تكرار المادة؟</label><input type="number" min="0" max="8" value="${w.reps}" oninput="w.reps=this.value">
@@ -231,8 +229,9 @@ function wizard(){
   return `<div class="card pop"><div class="dots">${dots}</div>${b}${err?`<div class="err">${err}</div>`:''}
   <div class="nav">${step>0?'<button class="btn g" onclick="step--;err=\'\';render()">رجوع</button>':(S.subs.length?'<button class="btn g" onclick="w=null;render()">إلغاء</button>':'')}<button class="btn" onclick="next()">${step===4?(w.editId?'حفظ التعديلات ✅':'ابدأ الآن 🚀'):'التالي'}</button></div></div>`;
 }
-const chList=()=>w.chs.map((x,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="s" style="width:64px;flex:none">الفصل ${i+1}</span><input type="number" min="1" value="${x.p}" oninput="w.chs[${i}].p=this.value" style="flex:1"><button class="chip ${x.h?'on':''}" onclick="tgH(${i})">⭐</button></div>`).join('');
-function setN(v){const n=Math.max(0,Math.min(60,Math.round(+v||0)));w.nch=n;while(w.chs.length<n)w.chs.push({p:20,h:false});w.chs.length=n;$('#chl').innerHTML=chList()}
+const chList=()=>`<div class="chr s" style="margin:0 0 4px"><span style="width:30px"></span><span style="flex:2">اسم الفصل (اختياري)</span><span style="flex:1">الصفحات</span><span style="width:48px"></span></div>`+w.chs.map((x,i)=>`<div class="chr"><div class="mv"><button onclick="mvC(${i},-1)">▲</button><button onclick="mvC(${i},1)">▼</button></div><input type="text" placeholder="الفصل ${i+1}" value="${esc(x.n||'')}" oninput="w.chs[${i}].n=this.value" style="flex:2"><input type="number" min="1" value="${x.p}" oninput="w.chs[${i}].p=this.value" style="flex:1"><button class="chip ${x.h?'on':''}" onclick="tgH(${i})">⭐</button></div>`).join('');
+function setN(v){const n=Math.max(0,Math.min(60,Math.round(+v||0)));w.nch=n;while(w.chs.length<n)w.chs.push({p:20,h:false,n:''});w.chs.length=n;$('#chl').innerHTML=chList()}
+function mvC(i,d){const j=i+d;if(j<0||j>=w.chs.length)return;[w.chs[i],w.chs[j]]=[w.chs[j],w.chs[i]];$('#chl').innerHTML=chList()}
 function tgH(i){w.chs[i].h=!w.chs[i].h;$('#chl').innerHTML=chList()}
 function tg(i){const k=w.restWd.indexOf(i);k<0?w.restWd.push(i):w.restWd.splice(k,1);render()}
 function addRd(){const v=$('#rd').value;if(v&&!w.restDates.includes(v))w.restDates.push(v);render()}
@@ -275,37 +274,43 @@ function confetti(){const c=document.createElement('canvas');c.style.cssText='po
 function spark(s){const ks=Object.keys(s.hist||{}).sort(),pts=[[s.start,0],...ks.map(k=>[k,s.hist[k]])];if(pts.length<2)return '<p class="s" style="margin:6px 0">📈 سيظهر خط إتقانك بعد أول تقييم</p>';
  const t0=parse(pts[0][0]),t1=Math.max(1,Math.round((parse(pts[pts.length-1][0])-t0)/864e5)),xy=pts.map(([d,v])=>[6+288*Math.round((parse(d)-t0)/864e5)/t1,54-48*v/100]);
  return `<svg viewBox="0 0 300 60" style="width:100%;height:70px;margin:6px 0"><polyline points="${xy.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#FF8A1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#FFB04D"/>`).join('')}</svg>`}
-let dc=null,box='',imp=false;
+let dc=null;
+function saveBlob(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000)}
 function exportData(){
-  const txt=JSON.stringify({app:'engram',v:1,at:new Date().toISOString(),data:S});
-  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='engram-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){}
-  box=txt;SFX.add();render();toast('⬇️ جارٍ التصدير — إن لم يبدأ التنزيل فانسخ النص أدناه');
+  if(!S.subs.length){toast('⚠️ لا توجد بيانات لتصديرها');return}
+  try{saveBlob(JSON.stringify({app:'engram',v:1,at:new Date().toISOString(),data:S}),'engram-backup-'+today()+'.json','application/json');SFX.add();toast('⬇️ تم إنشاء ملف النسخة الاحتياطية في جهازك (التنزيلات)')}catch(e){toast('⚠️ تعذّر إنشاء الملف، افتح التطبيق مباشرة في المتصفح')}
 }
-function copyBox(){const t=$('#exb');t.select();const fb=()=>{try{document.execCommand('copy');toast('📋 تم النسخ')}catch(e){toast('⚠️ حدّد النص وانسخه يدويًا')}};try{navigator.clipboard?navigator.clipboard.writeText(t.value).then(()=>toast('📋 تم النسخ'),fb):fb()}catch(e){fb()}}
 function importData(o){
   const d=(o&&o.data)||o||{},list=(d.subs||[]).filter(x=>x&&Array.isArray(x.tasks)&&Array.isArray(x.chunks)&&Array.isArray(x.restWd));
   if(!list.length){toast('⚠️ لا توجد مواد صالحة في هذا الملف');return}
   list.forEach(x=>{const i=S.subs.findIndex(y=>y.id===x.id);i>=0?S.subs[i]=x:S.subs.push(x)});
-  imp=false;w=null;S.tab='subs';save();SFX.add();render();toast('✅ تم استيراد '+list.length+' مواد');
+  w=null;S.tab='subs';save();SFX.add();render();toast('✅ تم استيراد '+list.length+' مواد');
 }
-function importText(t){let o;try{o=JSON.parse(t)}catch(e){toast('⚠️ النص غير صالح');return}importData(o)}
+function importText(t){let o;try{o=JSON.parse(t)}catch(e){toast('⚠️ الملف غير صالح');return}importData(o)}
 function importFile(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(r.result);r.readAsText(f);inp.value=''}
-const impBox=()=>`<textarea id="imt" placeholder="الصق نص النسخة الاحتياطية هنا"></textarea><button class="btn sm" onclick="importText($('#imt').value)">استيراد</button>`;
 function tools(){return `<div class="card"><h3 class="day-title">💾 النسخ الاحتياطي والطباعة</h3>
-  <p class="s" style="margin-bottom:12px">صدّر بياناتك واحفظها (مثلًا في Google Drive) لتستعيدها متى شئت أو تنقلها بين أجهزتك. الاستيراد يضيف المواد إلى موادك الحالية.</p>
-  <div class="chips"><button class="chip" onclick="exportData()">⬇️ تصدير</button><button class="chip" onclick="$('#imf').click()">⬆️ استيراد ملف</button><button class="chip ${imp?'on':''}" onclick="imp=!imp;render()">📋 استيراد من نص</button><button class="chip" onclick="printSubs(S.subs.map(x=>x.id))">🖨️ طباعة كل الجداول</button></div>
-  ${imp?impBox():''}
-  ${box?`<textarea id="exb" readonly>${esc(box)}</textarea><div class="chips"><button class="chip" onclick="copyBox()">📋 نسخ النص</button><button class="chip" onclick="box='';render()">إغلاق</button></div>`:''}
-  <p class="s" style="margin-top:10px;font-size:12px">للحصول على PDF اختر «حفظ كـ PDF» من نافذة الطباعة. التنزيل والطباعة يعملان بأفضل شكل عند فتح الملف مباشرة في المتصفح.</p></div>`}
-function printSubs(ids){
+  <p class="s" style="margin-bottom:12px">«تصدير» ينشئ ملفًا في جهازك (مجلد التنزيلات) يمكنك حفظه في Google Drive، و«استيراد» يستعيده من ملف. الاستيراد يضيف المواد إلى موادك الحالية ويستبدل المتطابقة.</p>
+  <div class="chips"><button class="chip" onclick="exportData()">⬇️ تصدير ملف</button><button class="chip" onclick="$('#imf').click()">⬆️ استيراد ملف</button><button class="chip" onclick="printSubs(S.subs.map(x=>x.id))">🖨️ طباعة كل الجداول</button><button class="chip" onclick="printSubs(S.subs.map(x=>x.id),true)">📄 ملف جدول للطباعة</button></div>
+  <p class="s" style="margin-top:10px;font-size:12px">للحصول على PDF اختر «حفظ كـ PDF» من نافذة الطباعة. إن لم تظهر النافذة في جهازك فاستخدم «ملف جدول للطباعة» ثم افتحه واطبعه.</p></div>`}
+let swOK=false;try{navigator.serviceWorker&&navigator.serviceWorker.register('sw.js').then(()=>{swOK=true}).catch(()=>{})}catch(e){}
+function notify(t,b){const o={body:b,tag:'engram',dir:'rtl',lang:'ar'};const f=()=>{try{new Notification(t,o)}catch(e){}};if(swOK)navigator.serviceWorker.ready.then(r=>r.showNotification(t,o)).catch(f);else f()}
+function toggleNotif(){S.nt=S.nt||{on:false,t:'08:00'};if(S.nt.on){S.nt.on=false;save();render();return}if(!('Notification' in window)){toast('⚠️ الإشعارات غير مدعومة في هذا المتصفح');return}Notification.requestPermission().then(p=>{if(p==='granted'){S.nt.on=true;S.nt.last='';save();toast('🔔 تم تفعيل الإشعارات');notify('Engram 🧠','ستصلك تذكيرات مهامك الدراسية 🎯')}else toast('⚠️ لم يُمنح الإذن');render()})}
+function setNT(v){S.nt=S.nt||{on:false};S.nt.t=v||'08:00';S.nt.last='';save();toast('⏰ تم ضبط وقت التذكير')}
+function testNotif(){if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولًا');return}notify('Engram 🧠','هذا إشعار تجريبي ✅')}
+function checkNotif(){const n=S.nt;if(!n||!n.on||!('Notification' in window)||Notification.permission!=='granted')return;const d=new Date(),td=today();if(n.last===td||p2(d.getHours())+':'+p2(d.getMinutes())<(n.t||'08:00'))return;const a=allTasks().filter(x=>!x.t.done&&x.t.date<=td);n.last=td;save();if(a.length){const l=a.filter(x=>x.t.date<td).length;notify('Engram 🧠','لديك '+a.length+' مهام اليوم'+(l?' (منها '+l+' متأخرة)':'')+' — هيا نبدأ 💪')}}
+function notifCard(){const n=S.nt||{},sup='Notification' in window,pm=sup?Notification.permission:'denied',on=n.on&&pm==='granted';return `<div class="card"><h3 class="day-title">🔔 الإشعارات</h3><p class="s" style="margin-bottom:12px">تذكير يومي بمهامك في الوقت الذي تختاره. يعمل والتطبيق مفتوح (حتى في الخلفية)، وإن فتحته بعد الوقت يصلك التذكير فورًا.</p>${!sup?'<p class="err" style="margin:0 0 10px">متصفحك لا يدعم الإشعارات.</p>':pm==='denied'?'<p class="err" style="margin:0 0 10px">الإشعارات محظورة لهذا الموقع من إعدادات المتصفح؛ فعّلها ثم أعد المحاولة.</p>':''}<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="chip ${on?'on':''}" onclick="toggleNotif()">${on?'🔔 مفعّلة':'🔕 تفعيل الإشعارات'}</button><label style="margin:0">الوقت</label><input type="time" value="${n.t||'08:00'}" onchange="setNT(this.value)" style="width:auto"><button class="chip" onclick="testNotif()">تجربة</button></div></div>`}
+function printSubs(ids,dl){
   const dn=d=>parse(d).toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const html=ids.map(id=>{const s=S.subs.find(x=>x.id===id);if(!s)return '';
     const dates=[...new Set(s.tasks.map(t=>t.date))].sort();
     return `<section><h2>${esc(s.name)}</h2><p>${s.chs?s.chs.length+' فصلًا ('+s.total+' صفحة)':s.total+' '+uw(s.unit,s.total)} • ${dates.length} يوم عمل • حتى ${dn(dates[dates.length-1])}</p><table><thead><tr><th>التاريخ</th><th>المهام</th><th>✓</th></tr></thead><tbody>${dates.map(d=>{const tk=s.tasks.filter(t=>t.date===d);return `<tr><td>${dn(d)}</td><td>${tk.map(t=>(t.type==='study'?'📖 دراسة':'🔁 مراجعة '+t.n)+': '+rng(t,s)).join('<br>')}</td><td>${tk.map(t=>t.done?'✔':'☐').join('<br>')}</td></tr>`}).join('')}</tbody></table></section>`}).join('');
   if(!html.trim()){toast('لا توجد مواد للطباعة');return}
-  $('#pa').innerHTML='<div class="pf">Engram — Designed by Sameer Attar</div>'+html;
-  toast('🖨️ جارٍ فتح نافذة الطباعة… اختر «حفظ كـ PDF»');
-  setTimeout(()=>{try{window.print()}catch(e){toast('⚠️ تعذّرت الطباعة هنا، افتح الملف مباشرة في المتصفح')}},250);
+  const css='body{font-family:Almarai,Tahoma,Arial,sans-serif;color:#000;margin:14px;direction:rtl}section{page-break-after:always}section:last-child{page-break-after:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #999;padding:6px 8px;text-align:right;vertical-align:top}th{background:#12305E;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}thead{display:table-header-group}tr{page-break-inside:avoid}h2{color:#12305E;margin:0 0 4px}p{font-size:12px;color:#333;margin:0 0 10px}.pf{font-size:11px;color:#777;direction:ltr;margin-bottom:8px}';
+  const doc='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engram</title><style>'+css+'</style></head><body><div class="pf">Engram — Designed by Sameer Attar</div>'+html+'</body></html>';
+  if(dl){saveBlob(doc,'engram-schedule-'+today()+'.html','text/html');toast('📄 تم إنشاء ملف الجدول — افتحه ثم اطبعه أو احفظه PDF');return}
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';f.srcdoc=doc;
+  f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();toast('🖨️ اختر «حفظ كـ PDF» لحفظ الجدول')}catch(e){printSubs(ids,true)}setTimeout(()=>f.remove(),120000)},300);
+  document.body.appendChild(f);
 }
 function del(sid){if(dc!==sid){dc=sid;render();setTimeout(()=>{if(dc===sid){dc=null;render()}},3000);return}dc=null;SFX.del();S.subs=S.subs.filter(x=>x.id!==sid);save();render()}
 function allTasks(){const a=[];S.subs.forEach(s=>s.tasks.forEach((t,i)=>a.push({s,t,i})));return a}
@@ -361,7 +366,7 @@ function subsView(){
   S.subs.forEach(s=>{const d=s.tasks.filter(t=>t.done).length,p=Math.round(d/s.tasks.length*100);
     h+=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>${esc(s.name)}</h2><div style="display:flex;gap:6px"><button class="btn g sm" onclick="editSub(${s.id})">✏️</button><button class="btn g sm" onclick="del(${s.id})">${dc===s.id?'تأكيد الحذف؟':'🗑'}</button></div></div>
     <p class="s">${s.chs?s.chs.length+' فصلًا ('+s.total+' صفحة)':s.total+' '+uw(s.unit,s.total)} • ${s.days} يومًا • ${s.reps} تكرارات</p><p class="s" style="margin-top:8px">🏆 إتقان المادة: <b style="color:var(--acc)">${mastery(s)}%</b></p><div class="bar"><i style="width:${mastery(s)}%"></i></div>${spark(s)}<p class="s">${d} من ${s.tasks.length} مهمة مجدولة</p></div>`});
-  return h+tools();
+  return h+tools()+notifCard();
 }
 function render(){
   const head=`<header><div class="header-title-box"><h1>🧠 Engram</h1><div class="app-name-explainer">لماذا Engram؟ الأثر الذاكري (Engram) مصطلح يشير إلى التغيرات المادية المرتبطة بتكوين الذكريات في الدماغ، فكل مراجعة تساهم في ترسيخ هذا الأثر في الذاكرة طويلة الأمد 🧠</div><div class="designer-credit">Designed by Sameer Attar</div></div><div class="header-controls"><span class="dpill">${new Date().toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long'})}</span><button class="btn-action" onclick="toggleTheme()">🌙 المظهر</button><button class="btn-action" onclick="snd=!snd;try{localStorage.setItem('sr3s',snd?'1':'0')}catch(e){};if(snd)SFX.tab();render()">${snd?'🔊':'🔇'} الصوت</button></div></header>`;
@@ -373,8 +378,8 @@ let dark=(()=>{try{const v=localStorage.getItem('sr3t');if(v)return v==='d'}catc
 const applyTheme=()=>document.body.classList.toggle('dark-theme',dark);
 function toggleTheme(){dark=!dark;try{localStorage.setItem('sr3t',dark?'d':'l')}catch(e){};applyTheme();SFX.tab()}
 applyTheme();
-let lastD=today();const chk=()=>{if(today()!==lastD){lastD=today();render()}};setInterval(chk,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()});
-render();
+let lastD=today();const chk=()=>{checkNotif();if(today()!==lastD){lastD=today();render()}};setInterval(chk,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()});
+render();checkNotif();
 </script>
 </body>
 </html>
