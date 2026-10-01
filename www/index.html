@@ -96,12 +96,16 @@ body.dark-theme .rb .q3{background:rgba(110,170,255,.18);color:#A9CCFF}body.dark
 .err{color:var(--bad);font-size:14px;margin-top:10px}
 .pop,.fade{animation:pop .4s}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#12305E,#FF8A1F);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;z-index:98;box-shadow:0 10px 30px #0008;max-width:90%;text-align:center}
+textarea{width:100%;min-height:110px;padding:10px;border-radius:6px;border:1.5px solid var(--btn-bd);background:var(--card);color:var(--tx);font-family:monospace;font-size:12px;direction:ltr;margin:10px 0}
+#pa{display:none}
+@media print{body{background:#fff!important;animation:none;padding:0;color:#000}.wrap,#toast{display:none!important}#pa{display:block;direction:rtl;color:#000}#pa section{page-break-after:always}#pa section:last-child{page-break-after:auto}#pa table{width:100%;border-collapse:collapse;font-size:12px}#pa th,#pa td{border:1px solid #999;padding:6px 8px;text-align:right;vertical-align:top;color:#000}#pa th{background:#12305E;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}#pa thead{display:table-header-group}#pa tr{page-break-inside:avoid}#pa h2{color:#12305E;font-size:20px;margin-bottom:4px}#pa p{margin-bottom:10px;font-size:12px;color:#333}.pf{font-size:11px;color:#777;margin-bottom:8px;direction:ltr}}
 .chr{display:flex;align-items:center;gap:6px;margin-bottom:8px}.chr input{min-width:0}.mv{display:flex;flex-direction:column;gap:2px}.mv button{border:1px solid var(--btn-bd);background:var(--btn-bg);color:var(--btn-tx);border-radius:5px;font-size:10px;line-height:1;padding:3px 7px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
-<input type="file" id="imf" accept=".json,application/json,text/plain" hidden onchange="importFile(this)">
+<div id="pa"></div>
+<input type="file" id="imf" hidden onchange="importFile(this)">
 <script>
 const $=s=>document.querySelector(s),app=$('#app');
 const DN=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
@@ -246,7 +250,7 @@ function rate(sid,idx,q){
   if(t.type==='study'){ch.studied=true;ch.m=0;ch.ng=nextG(1,FQ[q])}
   else{const g=t.gap||1,n=t.n;ch.m=q===0?n-1:q===3?Math.min(RR(s,ch),n+1):n;ch.ng=nextG(g,FQ[q])}
   ch.last=now;
-  if(ch.m<RR(s,ch))project(s,ch,now,ch.m,ch.ng);
+if(ch.m<RR(s,ch))project(s,ch,now,ch.m,ch.ng);
   s.hist[now]=mastery(s);
   const nx=s.tasks.filter(x=>x.cid===ch.id&&!x.done).map(x=>x.date).sort()[0];
   [SFX.hard,SFX.ok,SFX.mid,SFX.easy][q]();navigator.vibrate&&navigator.vibrate(12);
@@ -275,10 +279,12 @@ function spark(s){const ks=Object.keys(s.hist||{}).sort(),pts=[[s.start,0],...ks
  const t0=parse(pts[0][0]),t1=Math.max(1,Math.round((parse(pts[pts.length-1][0])-t0)/864e5)),xy=pts.map(([d,v])=>[6+288*Math.round((parse(d)-t0)/864e5)/t1,54-48*v/100]);
  return `<svg viewBox="0 0 300 60" style="width:100%;height:70px;margin:6px 0"><polyline points="${xy.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#FF8A1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#FFB04D"/>`).join('')}</svg>`}
 let dc=null;
-function saveBlob(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000)}
+const CAPJ=window.Capacitor,native=!!(CAPJ&&CAPJ.isNativePlatform&&CAPJ.isNativePlatform()),NP=n=>CAPJ&&CAPJ.Plugins&&CAPJ.Plugins[n];
+async function nativeSave(txt,name){const r=await NP('Filesystem').writeFile({path:name,data:txt,directory:'CACHE',encoding:'utf8'});await NP('Share').share({title:name,url:r.uri,dialogTitle:'احفظ الملف في جهازك أو Drive'})}
+function saveBlob(txt,name,type){if(native&&NP('Filesystem')&&NP('Share')){nativeSave(txt,name).catch(()=>toast('⚠️ تعذّر حفظ الملف'));return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000)}
 function exportData(){
   if(!S.subs.length){toast('⚠️ لا توجد بيانات لتصديرها');return}
-  try{saveBlob(JSON.stringify({app:'engram',v:1,at:new Date().toISOString(),data:S}),'engram-backup-'+today()+'.json','application/json');SFX.add();toast('⬇️ تم إنشاء ملف النسخة الاحتياطية في جهازك (التنزيلات)')}catch(e){toast('⚠️ تعذّر إنشاء الملف، افتح التطبيق مباشرة في المتصفح')}
+  try{saveBlob(JSON.stringify({app:'engram',v:1,at:new Date().toISOString(),data:S}),'engram-backup-'+today()+'.json','application/json');SFX.add();toast('⬇️ تم إنشاء ملف النسخة الاحتياطية')}catch(e){toast('⚠️ تعذّر إنشاء الملف، افتح التطبيق مباشرة في المتصفح')}
 }
 function importData(o){
   const d=(o&&o.data)||o||{},list=(d.subs||[]).filter(x=>x&&Array.isArray(x.tasks)&&Array.isArray(x.chunks)&&Array.isArray(x.restWd));
@@ -294,12 +300,15 @@ function tools(){return `<div class="card"><h3 class="day-title">💾 النسخ
   <p class="s" style="margin-top:10px;font-size:12px">للحصول على PDF اختر «حفظ كـ PDF» من نافذة الطباعة. إن لم تظهر النافذة في جهازك فاستخدم «ملف جدول للطباعة» ثم افتحه واطبعه.</p></div>`}
 let swOK=false;try{navigator.serviceWorker&&navigator.serviceWorker.register('sw.js').then(()=>{swOK=true}).catch(()=>{})}catch(e){}
 function notify(t,b){const o={body:b,tag:'engram',dir:'rtl',lang:'ar'};const f=()=>{try{new Notification(t,o)}catch(e){}};if(swOK)navigator.serviceWorker.ready.then(r=>r.showNotification(t,o)).catch(f);else f()}
-function toggleNotif(){S.nt=S.nt||{on:false,t:'08:00'};if(S.nt.on){S.nt.on=false;save();render();return}if(!('Notification' in window)){toast('⚠️ الإشعارات غير مدعومة في هذا المتصفح');return}Notification.requestPermission().then(p=>{if(p==='granted'){S.nt.on=true;S.nt.last='';save();toast('🔔 تم تفعيل الإشعارات');notify('Engram 🧠','ستصلك تذكيرات مهامك الدراسية 🎯')}else toast('⚠️ لم يُمنح الإذن');render()})}
-function setNT(v){S.nt=S.nt||{on:false};S.nt.t=v||'08:00';S.nt.last='';save();toast('⏰ تم ضبط وقت التذكير')}
-function testNotif(){if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولًا');return}notify('Engram 🧠','هذا إشعار تجريبي ✅')}
-function checkNotif(){const n=S.nt;if(!n||!n.on||!('Notification' in window)||Notification.permission!=='granted')return;const d=new Date(),td=today();if(n.last===td||p2(d.getHours())+':'+p2(d.getMinutes())<(n.t||'08:00'))return;const a=allTasks().filter(x=>!x.t.done&&x.t.date<=td);n.last=td;save();if(a.length){const l=a.filter(x=>x.t.date<td).length;notify('Engram 🧠','لديك '+a.length+' مهام اليوم'+(l?' (منها '+l+' متأخرة)':'')+' — هيا نبدأ 💪')}}
-function notifCard(){const n=S.nt||{},sup='Notification' in window,pm=sup?Notification.permission:'denied',on=n.on&&pm==='granted';return `<div class="card"><h3 class="day-title">🔔 الإشعارات</h3><p class="s" style="margin-bottom:12px">تذكير يومي بمهامك في الوقت الذي تختاره. يعمل والتطبيق مفتوح (حتى في الخلفية)، وإن فتحته بعد الوقت يصلك التذكير فورًا.</p>${!sup?'<p class="err" style="margin:0 0 10px">متصفحك لا يدعم الإشعارات.</p>':pm==='denied'?'<p class="err" style="margin:0 0 10px">الإشعارات محظورة لهذا الموقع من إعدادات المتصفح؛ فعّلها ثم أعد المحاولة.</p>':''}<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="chip ${on?'on':''}" onclick="toggleNotif()">${on?'🔔 مفعّلة':'🔕 تفعيل الإشعارات'}</button><label style="margin:0">الوقت</label><input type="time" value="${n.t||'08:00'}" onchange="setNT(this.value)" style="width:auto"><button class="chip" onclick="testNotif()">تجربة</button></div></div>`}
-function printSubs(ids,dl){
+async function nativeSchedule(){const L=NP('LocalNotifications');if(!L)return;try{await L.cancel({notifications:[{id:1}]});const n=S.nt;if(!n||!n.on)return;const [h,m]=(n.t||'08:00').split(':').map(Number);await L.schedule({notifications:[{id:1,title:'Engram 🧠',body:'حان وقت مهامك الدراسية اليوم 💪',schedule:{on:{hour:h,minute:m},allowWhileIdle:true}}]})}catch(e){}}
+function toggleNotif(){S.nt=S.nt||{on:false,t:'08:00'};if(S.nt.on){S.nt.on=false;save();nativeSchedule();render();return}
+  if(native){const L=NP('LocalNotifications');if(!L){toast('⚠️ إضافة الإشعارات غير مثبتة في التطبيق');return}L.requestPermissions().then(r=>{if(r.display==='granted'){S.nt.on=true;save();nativeSchedule();toast('🔔 تم تفعيل التذكير اليومي')}else toast('⚠️ لم يُمنح الإذن، فعّله من إعدادات الهاتف');render()}).catch(()=>toast('⚠️ تعذّر طلب الإذن'));return}
+  if(!('Notification' in window)){toast('⚠️ الإشعارات غير مدعومة في هذا المتصفح');return}Notification.requestPermission().then(p=>{if(p==='granted'){S.nt.on=true;S.nt.last='';save();toast('🔔 تم تفعيل الإشعارات');notify('Engram 🧠','ستصلك تذكيرات مهامك الدراسية 🎯')}else toast('⚠️ لم يُمنح الإذن');render()})}
+function setNT(v){S.nt=S.nt||{on:false};S.nt.t=v||'08:00';S.nt.last='';save();nativeSchedule();toast('⏰ تم ضبط وقت التذكير')}
+function testNotif(){if(native){const L=NP('LocalNotifications');if(!L){toast('⚠️ إضافة الإشعارات غير مثبتة');return}L.checkPermissions().then(r=>r.display==='granted'?L.schedule({notifications:[{id:2,title:'Engram 🧠',body:'هذا إشعار تجريبي ✅',schedule:{at:new Date(Date.now()+1500)}}]}):toast('فعّل الإشعارات أولًا'));return}if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولًا');return}notify('Engram 🧠','هذا إشعار تجريبي ✅')}
+function checkNotif(){if(native)return;const n=S.nt;if(!n||!n.on||!('Notification' in window)||Notification.permission!=='granted')return;const d=new Date(),td=today();if(n.last===td||p2(d.getHours())+':'+p2(d.getMinutes())<(n.t||'08:00'))return;const a=allTasks().filter(x=>!x.t.done&&x.t.date<=td);n.last=td;save();if(a.length){const l=a.filter(x=>x.t.date<td).length;notify('Engram 🧠','لديك '+a.length+' مهام اليوم'+(l?' (منها '+l+' متأخرة)':'')+' — هيا نبدأ 💪')}}
+function notifCard(){const n=S.nt||{},sup=native||'Notification' in window,pm=native?'granted':sup?Notification.permission:'denied',on=n.on&&pm==='granted';return `<div class="card"><h3 class="day-title">🔔 الإشعارات</h3><p class="s" style="margin-bottom:12px">تذكير يومي بمهامك في الوقت الذي تختاره. ${native?'يصلك التذكير في الوقت المحدد حتى لو كان التطبيق مغلقًا.':'يعمل والتطبيق مفتوح (حتى في الخلفية)، وإن فتحته بعد الوقت يصلك التذكير فورًا.'}</p>${!sup?'<p class="err" style="margin:0 0 10px">متصفحك لا يدعم الإشعارات.</p>':pm==='denied'?'<p class="err" style="margin:0 0 10px">الإشعارات محظورة لهذا الموقع من إعدادات المتصفح؛ فعّلها ثم أعد المحاولة.</p>':''}<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="chip ${on?'on':''}" onclick="toggleNotif()">${on?'🔔 مفعّلة':'🔕 تفعيل الإشعارات'}</button><label style="margin:0">الوقت</label><input type="time" value="${n.t||'08:00'}" onchange="setNT(this.value)" style="width:auto"><button class="chip" onclick="testNotif()">تجربة</button></div></div>`}
+function printSubs(ids,dl){if(native)dl=true;
   const dn=d=>parse(d).toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const html=ids.map(id=>{const s=S.subs.find(x=>x.id===id);if(!s)return '';
     const dates=[...new Set(s.tasks.map(t=>t.date))].sort();
@@ -370,7 +379,7 @@ function subsView(){
 }
 function render(){
   const head=`<header><div class="header-title-box"><h1>🧠 Engram</h1><div class="app-name-explainer">لماذا Engram؟ الأثر الذاكري (Engram) مصطلح يشير إلى التغيرات المادية المرتبطة بتكوين الذكريات في الدماغ، فكل مراجعة تساهم في ترسيخ هذا الأثر في الذاكرة طويلة الأمد 🧠</div><div class="designer-credit">Designed by Sameer Attar</div></div><div class="header-controls"><span class="dpill">${new Date().toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long'})}</span><button class="btn-action" onclick="toggleTheme()">🌙 المظهر</button><button class="btn-action" onclick="snd=!snd;try{localStorage.setItem('sr3s',snd?'1':'0')}catch(e){};if(snd)SFX.tab();render()">${snd?'🔊':'🔇'} الصوت</button></div></header>`;
-  if(w||!S.subs.length){if(!w)w=newW();app.innerHTML=head+wizard();return}
+if(w||!S.subs.length){if(!w)w=newW();app.innerHTML=head+wizard();return}
   const v=S.tab==='today'?todayView():S.tab==='plan'?planView():subsView();
   app.innerHTML=head+`<div class="tabs">${[['today','🏠','اليوم'],['plan','🗓️','الجدول'],['subs','📚','موادي']].map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="SFX.tab();S.tab='${k}';save();render()">${i} ${n}</button>`).join('')}</div><div class="fade">${v}</div>`;
 }
@@ -379,7 +388,7 @@ const applyTheme=()=>document.body.classList.toggle('dark-theme',dark);
 function toggleTheme(){dark=!dark;try{localStorage.setItem('sr3t',dark?'d':'l')}catch(e){};applyTheme();SFX.tab()}
 applyTheme();
 let lastD=today();const chk=()=>{checkNotif();if(today()!==lastD){lastD=today();render()}};setInterval(chk,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()});
-render();checkNotif();
+render();checkNotif();if(native)nativeSchedule();
 </script>
 </body>
 </html>
